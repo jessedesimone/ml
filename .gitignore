@@ -4,3 +4,4 @@ aidp/aidp/report/*
 aidp/aidp/runners/*
 aidp/infiles/*
 aidp/out.log
+aidp/aidp/__pycache__/
