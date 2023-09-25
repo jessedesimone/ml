@@ -1,1 +1,1 @@
-column headers in train and test infiles need to match column_names.conf
+column_names.conf defines the columns to read in train and test datasets.
