@@ -3,3 +3,4 @@ aidp/aidp/ml/*
 aidp/aidp/report/*
 aidp/aidp/runners/*
 aidp/infiles/*
+aidp/out.log
