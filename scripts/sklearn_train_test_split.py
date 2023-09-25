@@ -10,17 +10,16 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 #define paths
-top = '/Users/jessedesimone/DeSimone_Github/neuropacs/aiddml'
-data_dir = os.path.join(top + '/data')
-out_dir = os.path.join(top + '/input')
+top = '/Users/jessedesimone/desimone_github/ml/aidp'
+data_dir = os.path.join(top + '/infiles')
+os.chdir(data_dir)
 
 #read data
-df = pd.read_excel(os.path.join(data_dir + '/test.xlsx'))
+df = pd.read_excel('data_ad_dlb_ftd_full.xlsx')
 
-#define predictors (X) and outcome (y) variables
-
-
-#train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print(X_train.shape, y_train.shape)
-print(X_test.shape, y_test.shape)
+#train test split | save train and test data as outfiles
+train, test = train_test_split(df, test_size=0.2, random_state=42)
+print(train.shape)
+print(test.shape)
+train.to_excel('data_ad_dlb_ftd_train.xlsx')
+test.to_excel('data_ad_dlb_ftd_test.xlsx')
