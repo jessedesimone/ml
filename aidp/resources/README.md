@@ -1,1 +1,0 @@
-column_names.conf defines the columns to read in train and test datasets.
