@@ -69,7 +69,8 @@ def parse_arguments():
     subparser = parser.add_subparsers(dest='cmd')
     subparser.required = True
 
-    parser_predict = subparser.add_parser("predict")
+    #parser_predict defines position arguments for help message (aidp -h/--help)
+    parser_predict = subparser.add_parser("predict")    
     parser_predict.add_argument(
         "input_file", help="Input excel file with data you'd like to get predictions for")
     parser_predict.add_argument("-v", "--verbose", help="increase output verbosity",

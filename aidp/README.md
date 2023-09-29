@@ -29,7 +29,10 @@ The input excel sheet must adhere pretty closely to the format of the sample exc
 
 You can optionally provide a model key (using  `--model_key=<key>`) when making a call to train the models.  This will save all models generated during this session to `/resources/models/<key>/` folder.  If no model key is provided, a timestamp will be used. 
 
-
+For training help:
+``` bash
+aidp train -h
+```
 
 ### Predict
 Pass `predict` as the second parameter to `aidp` to make predictions using the model specified by the `model_key` parameter based on the data in the excel sheet passed as the third parameter. E.g,
