@@ -44,3 +44,8 @@ aidp predict input_file.xlsx [--model_key='default']
 Again,the input excel sheet must adhere pretty closely to the format of the sample excel sheet in `./tests/resources/text.xlsx`. However, no GroupIds are required for predictions.
 
 You can optionally provide a model key (using  `--model_key=<key>`) when making a call to predict.  This will use the models saved in `/resources/models/<key>/` folder for predictions.  If no model key is provided, `default` is used. 
+
+For prediction help:
+``` bash
+aidp predict -h
+```
