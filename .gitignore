@@ -16,3 +16,6 @@ aidp/resources/*
 aidp/tests/.DS_Store
 .DS_Store
 aidp/*
+scipts/ROC_histo.ipynb
+scipts/boostrappingCI.ipynb
+scipts/Predictor.ipynb
