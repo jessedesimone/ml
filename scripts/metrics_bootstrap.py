@@ -1,9 +1,11 @@
-#!/usr/local/bin/python3.9
+#!/usr/local/bin/python
 
 '''
-Module for for bootstrapping metrics on train and test predictions output from AIDP SVM
+Module for bootstrapping metrics on train and test predictions output from AIDP SVM
 
 '''
+#================== configuration ==================
+
 #import packages
 import os
 import logging
@@ -14,6 +16,9 @@ import numpy as np
 import sys
 from sklearn import preprocessing
 
+'''note: must use sklearn version 0.21.3 or lower for handling pkl files
+pkl files contain the optomized parameters from aidp svm model training
+not needed here'''
 #version control
 # skvers = sklearn.__version__
 # #NEED to use the same ML conda version (scikit0learn==0.19.0)
@@ -49,7 +54,7 @@ os.chdir(directories.infile_dir)
 logger.info("Infile directory: {}".format(directories.infile_dir))
 logger.info("Current kernel is " + os.environ['CONDA_DEFAULT_ENV'])
 
-#Load Dataframes
+#load Dataframes
 logger.info("Loading dataframes")
 df_tr=pd.read_excel(directories.infile_dir +'aidd_training_model_231027.xlsx', header=0, index_col="Subject")
 logger.info("training model")
@@ -196,7 +201,7 @@ logger.info("calulating metrics")
 logger.info("AD vs DLB")
 #advdlb=pickle.load(open(directories.infile_dir + 'dmri/' + 'ad_v_dlb.pkl', 'rb'))
 #train
-df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim.GroupID!=3) & (df_tr_trim.GroupID!=4)]
+df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim['GroupID'] == 1) | (df_tr_trim['GroupID'] == 2)]
 df_tr_trim_addlb_redef = df_tr_trim_addlb.replace(dict_list[1])
 Y_true_tr_addlb = np.array(df_tr_trim_addlb_redef.GroupID)
 Y_pred_tr_addlb = np.array(df_tr_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
@@ -206,7 +211,7 @@ test_scores(Y_true_tr_addlb, Y_pred_tr_addlb)
 write_report('train', Y_true_tr_addlb, Y_pred_tr_addlb)
 
 #test
-df_te_trim_addlb = df_te_trim.loc[(df_te_trim.GroupID!=3) & (df_te_trim.GroupID!=4)]
+df_te_trim_addlb = df_te_trim.loc[(df_te_trim['GroupID'] == 1) | (df_te_trim['GroupID'] == 2)]
 df_te_trim_addlb_redef = df_te_trim_addlb.replace(dict_list[1])
 Y_true_te_addlb = np.array(df_te_trim_addlb_redef.GroupID)
 Y_pred_te_addlb = np.array(df_te_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
@@ -218,7 +223,7 @@ write_report('test', Y_true_te_addlb, Y_pred_te_addlb)
 #AD vs FTD
 #train
 logger.info("FTD vs AD")
-df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID!=2) & (df_tr_trim.GroupID!=3)]
+df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID ==1 ) & (df_tr_trim.GroupID == 4)]
 df_tr_trim_adftd_redef = df_tr_trim_adftd.replace(dict_list[11])
 Y_true_tr_adftd = np.array(df_tr_trim_adftd_redef.GroupID)
 Y_pred_tr_adftd = np.array(df_tr_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
@@ -228,18 +233,16 @@ test_scores(Y_true_tr_adftd, Y_pred_tr_adftd)
 write_report('train', Y_true_tr_adftd, Y_pred_tr_adftd)
 
 #test
-df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID!=2) & (df_te_trim.GroupID!=3)]
+df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID == 1) & (df_te_trim.GroupID == 4)]
 df_te_trim_adftd_redef = df_te_trim_adftd.replace(dict_list[11])
 Y_true_te_adftd = np.array(df_te_trim_adftd_redef.GroupID)
 Y_pred_te_adftd = np.array(df_te_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
-bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_train")
-report_mean_ci(dfname="ftd_v_ad_train")
+bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_test")
+report_mean_ci(dfname="ftd_v_ad_test")
 test_scores(Y_true_te_adftd, Y_pred_te_adftd)
 write_report('test', Y_true_te_adftd, Y_pred_te_adftd)
 
-#AD vs dementia
-logger.info("AD vs DLB/FTD")
-
 
 # exit sys
+logger.info("Bootstrap code completed")
 sys.exit()
