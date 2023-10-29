@@ -1,10 +1,7 @@
 #!/usr/local/bin/python3.9
 
 '''
-Module for:
-confusion matrix
-bootsrapping metrics
-confidence intervals
+Module for for bootstrapping metrics on train and test predictions output from AIDP SVM
 
 '''
 #import packages
@@ -15,6 +12,7 @@ from sklearn.metrics import roc_auc_score, confusion_matrix
 import pickle
 import numpy as np
 import sys
+from sklearn import preprocessing
 
 #version control
 # skvers = sklearn.__version__
@@ -59,6 +57,7 @@ logger.info(df_tr.head())
 df_te=pd.read_excel(directories.infile_dir +'aidd_testing_model_231027.xlsx', header=0, index_col="Subject")
 logger.info("testing model")
 logger.info(df_te.head())
+#keep only probability columns
 keep_columns=[
     "GroupID",
     "dmri_ad_v_dlb (AD Probability)",
@@ -106,6 +105,7 @@ ftd_v_all_dict = {"GroupID": {4:1, 1:0, 2:0, 3:0}}      #FTD pos class = 1; AD/D
 #cvb_dict = {"GroupID": {1:"A", 2:"A", 3:"B"}}
 #tf_dict = {"GroupID": {"B":1, "A":0}}
 
+#create dict list to call later
 dict_list = [ad_v_con_dict, ad_v_dlb_dict, ad_v_ftd_dict, ad_v_dem_dict, ad_v_all_dict,
              dlb_v_con_dict, dlb_v_ad_dict, dlb_v_ftd_dict, dlb_v_dem_dict, dlb_v_all_dict,
              ftd_v_con_dict, ftd_v_ad_dict, ftd_v_dlb_dict, ftd_v_dem_dict, ftd_v_all_dict]
@@ -160,7 +160,6 @@ def report_mean_ci(dfname: str):
         upper_met = metric_array[int(0.975*len(metric_array))]
         # print(metric, mean_met, lower_met, upper_met)
         df_sum.loc[str(metric)] = [mean_met, lower_met, upper_met]
-        
     df_sum.to_excel(directories.outfile_dir + dfname + '_mean_ci_report.xlsx')
     
 def test_scores(Y_true, Y_pred):
@@ -195,7 +194,7 @@ def write_report(metric_type: str, Y_true, Y_pred):
 logger.info("calulating metrics")
 #AD vs DLB
 logger.info("AD vs DLB")
-#advdlb=pickle.load(open(directories.infile_dir + 'ad_v_dlb.pkl', 'rb'))
+#advdlb=pickle.load(open(directories.infile_dir + 'dmri/' + 'ad_v_dlb.pkl', 'rb'))
 #train
 df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim.GroupID!=3) & (df_tr_trim.GroupID!=4)]
 df_tr_trim_addlb_redef = df_tr_trim_addlb.replace(dict_list[1])
@@ -216,7 +215,30 @@ report_mean_ci(dfname="ad_v_dlb_test")
 test_scores(Y_true_te_addlb, Y_pred_te_addlb)
 write_report('test', Y_true_te_addlb, Y_pred_te_addlb)
 
+#AD vs FTD
+#train
+logger.info("FTD vs AD")
+df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID!=2) & (df_tr_trim.GroupID!=3)]
+df_tr_trim_adftd_redef = df_tr_trim_adftd.replace(dict_list[11])
+Y_true_tr_adftd = np.array(df_tr_trim_adftd_redef.GroupID)
+Y_pred_tr_adftd = np.array(df_tr_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
+bootstrapper(Y_true_tr_adftd, Y_pred_tr_adftd, savename="ftd_v_ad_train")
+report_mean_ci(dfname="ftd_v_ad_train")
+test_scores(Y_true_tr_adftd, Y_pred_tr_adftd)
+write_report('train', Y_true_tr_adftd, Y_pred_tr_adftd)
 
+#test
+df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID!=2) & (df_te_trim.GroupID!=3)]
+df_te_trim_adftd_redef = df_te_trim_adftd.replace(dict_list[11])
+Y_true_te_adftd = np.array(df_te_trim_adftd_redef.GroupID)
+Y_pred_te_adftd = np.array(df_te_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
+bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_train")
+report_mean_ci(dfname="ftd_v_ad_train")
+test_scores(Y_true_te_adftd, Y_pred_te_adftd)
+write_report('test', Y_true_te_adftd, Y_pred_te_adftd)
+
+#AD vs dementia
+logger.info("AD vs DLB/FTD")
 
 
 # exit sys
