@@ -11,7 +11,7 @@ import os
 import logging
 import pandas as pd
 import sklearn
-from sklearn.metrics import roc_auc_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -40,7 +40,7 @@ os.chdir(directories.script_dir)
 from logger import configure_logger
 configure_logger(directories.log_dir)
 logger = logging.getLogger(__name__)
-logger.info("Starting bootstrap code")
+logger.info("++ Starting aidp_metrics.py")
 
 os.chdir(directories.infile_dir)
 logger.info("Infile directory: {}".format(directories.infile_dir))
@@ -193,14 +193,14 @@ def write_report(metric_type: str, Y_true, Y_pred):
     logger.info(acc_score)
 
 # plot roc curve 
-def plotroc(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
+def plotroc1(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
     '''trfp/tefp = training false positive rate / testing
     trtp/tetp = training true positive rate / testing
     trauc/teauc = training auc / testing
     title = figure title
     outname = output file name (no extension)'''
     print('plotting ROC curve')
-    fig=plt.figure()
+
     plt.plot(trfp, trtp, label="Training AUC=%0.3f" %trauc)
     plt.plot(tefp, tetp, label="Testing AUC=%0.3f" %teauc)
     plt.plot([0,1], [0,1], 'k--')
@@ -210,57 +210,102 @@ def plotroc(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
     plt.legend(loc=4, frameon=False)
     plt.savefig(outname +'.jpg', dpi=300)
     plt.show()
-    return fig
+
+def plotroc_single(Y_true, Y_pred, title: str, outname: str, type: str):
+    fpr, tpr, thresh = roc_curve(Y_true, Y_pred)
+    auc = round(roc_auc_score(Y_true, Y_pred), 3)
+    if type == 'train':
+        lab='train'
+    elif type == 'test':
+        lab='test'
+    plt.plot(fpr, tpr, lw=1, alpha=0.3, label=lab + ' ' + 'AUC=' + str(auc))
+    plt.plot([0,1], [0,1], 'k--')
+    plt.title(title + ' ' + type, color='k', rotation='vertical', x=-.15, y=.345)
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.legend(loc=4, frameon=False)
+    plt.tight_layout()
+    plt.savefig(directories.outfile_dir + outname + '_' + type + '.jpg', dpi=300)
+    return plt.show()
+
+def plotroc_both(Y_true_train, Y_pred_train, Y_true_test, Y_pred_test, title: str, outname: str):
+    fpr_tr, tpr_tr, thresh_tr = roc_curve(Y_true_train, Y_pred_train)
+    auc_tr = roc_curve(Y_true_train, Y_pred_train)
+    fpr_te, tpr_te, thresh_te = roc_curve(Y_true_test, Y_pred_test)
+    auc_te = roc_curve(Y_true_test, Y_pred_test)
+    '''something wrong with below lines of code - very odd figure being created; showing array?'''
+    #plt.plot(fpr_tr, tpr_tr, lw=1, alpha=0.3, label="Train AUC=" + str(auc_tr))
+    #plt.plot(fpr_te, tpr_te, lw=2, alpha=0.3, label="Test AUC=" + str(auc_te))
+    plt.plot([0,1], [0,1], 'k--')
+    plt.title(title, color='k', rotation='vertical', x=-.15, y=.345)
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.legend(loc=4, frameon=False)
+    plt.tight_layout()
+    plt.savefig(directories.outfile_dir + outname + '.jpg', dpi=300)
+    return plt.show()
 
 
 #================== calculate metrics ==================
+#================== AD vs DLB ==================
 logger.info("calulating metrics")
 #AD vs DLB
 logger.info("AD vs DLB")
 #advdlb=pickle.load(open(directories.infile_dir + 'dmri/' + 'ad_v_dlb.pkl', 'rb'))
 #train
+logger.info("Training & Validation")
 df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim['GroupID'] == 1) | (df_tr_trim['GroupID'] == 2)]
 df_tr_trim_addlb_redef = df_tr_trim_addlb.replace(dict_list[1])
 Y_true_tr_addlb = np.array(df_tr_trim_addlb_redef.GroupID)
 Y_pred_tr_addlb = np.array(df_tr_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
-bootstrapper(Y_true_tr_addlb, Y_pred_tr_addlb, savename="ad_v_dlb_train")
-report_mean_ci(dfname="ad_v_dlb_train")
-test_scores(Y_true_tr_addlb, Y_pred_tr_addlb)
-write_report('train', Y_true_tr_addlb, Y_pred_tr_addlb)
+logger.info("Generating Reports")
+# bootstrapper(Y_true_tr_addlb, Y_pred_tr_addlb, savename="ad_v_dlb_train")
+# report_mean_ci(dfname="ad_v_dlb_train")
+# test_scores(Y_true_tr_addlb, Y_pred_tr_addlb)
+# write_report('train', Y_true_tr_addlb, Y_pred_tr_addlb)
 
 #test
+logger.info("Testing")
 df_te_trim_addlb = df_te_trim.loc[(df_te_trim['GroupID'] == 1) | (df_te_trim['GroupID'] == 2)]
 df_te_trim_addlb_redef = df_te_trim_addlb.replace(dict_list[1])
 Y_true_te_addlb = np.array(df_te_trim_addlb_redef.GroupID)
 Y_pred_te_addlb = np.array(df_te_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
-bootstrapper(Y_true_te_addlb, Y_pred_te_addlb, savename="ad_v_dlb_test")
-report_mean_ci(dfname="ad_v_dlb_test")
-test_scores(Y_true_te_addlb, Y_pred_te_addlb)
-write_report('test', Y_true_te_addlb, Y_pred_te_addlb)
-
-#AD vs FTD
-#train
-logger.info("FTD vs AD")
-df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID ==1 ) & (df_tr_trim.GroupID == 4)]
-df_tr_trim_adftd_redef = df_tr_trim_adftd.replace(dict_list[11])
-Y_true_tr_adftd = np.array(df_tr_trim_adftd_redef.GroupID)
-Y_pred_tr_adftd = np.array(df_tr_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
-bootstrapper(Y_true_tr_adftd, Y_pred_tr_adftd, savename="ftd_v_ad_train")
-report_mean_ci(dfname="ftd_v_ad_train")
-test_scores(Y_true_tr_adftd, Y_pred_tr_adftd)
-write_report('train', Y_true_tr_adftd, Y_pred_tr_adftd)
-
-#test
-df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID == 1) & (df_te_trim.GroupID == 4)]
-df_te_trim_adftd_redef = df_te_trim_adftd.replace(dict_list[11])
-Y_true_te_adftd = np.array(df_te_trim_adftd_redef.GroupID)
-Y_pred_te_adftd = np.array(df_te_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
-bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_test")
-report_mean_ci(dfname="ftd_v_ad_test")
-test_scores(Y_true_te_adftd, Y_pred_te_adftd)
-write_report('test', Y_true_te_adftd, Y_pred_te_adftd)
+logger.info("Generating Reports")
+# bootstrapper(Y_true_te_addlb, Y_pred_te_addlb, savename="ad_v_dlb_test")
+# report_mean_ci(dfname="ad_v_dlb_test")
+# test_scores(Y_true_te_addlb, Y_pred_te_addlb)
+# write_report('test', Y_true_te_addlb, Y_pred_te_addlb)
 
 
-# exit sys
-logger.info("Bootstrap code completed")
+logger.info("Plotting ROC curves")
+# plotroc_single(Y_true_tr_addlb, Y_pred_tr_addlb, 'AD_vs_DLB', 'roc_ad_v_dlb', 'train')
+# plotroc_single(Y_true_te_addlb, Y_pred_te_addlb, 'AD_vs_DLB Test', 'roc_ad_v_dlb_test', 'test')
+plotroc_both(Y_true_tr_addlb, Y_pred_tr_addlb, Y_true_te_addlb, Y_pred_te_addlb, 'AD_vs_DLB', 'roc_ad_v_dlb')       #ERROR: TypeError: only size-1 arrays can be converted to Python scalars
+
+# #================== AD vs FTD ==================
+# #AD vs FTD
+# #train
+# logger.info("FTD vs AD")
+# df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID ==1 ) & (df_tr_trim.GroupID == 4)]
+# df_tr_trim_adftd_redef = df_tr_trim_adftd.replace(dict_list[11])
+# Y_true_tr_adftd = np.array(df_tr_trim_adftd_redef.GroupID)
+# Y_pred_tr_adftd = np.array(df_tr_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
+# bootstrapper(Y_true_tr_adftd, Y_pred_tr_adftd, savename="ftd_v_ad_train")
+# report_mean_ci(dfname="ftd_v_ad_train")
+# test_scores(Y_true_tr_adftd, Y_pred_tr_adftd)
+# write_report('train', Y_true_tr_adftd, Y_pred_tr_adftd)
+
+# #test
+# df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID == 1) & (df_te_trim.GroupID == 4)]
+# df_te_trim_adftd_redef = df_te_trim_adftd.replace(dict_list[11])
+# Y_true_te_adftd = np.array(df_te_trim_adftd_redef.GroupID)
+# Y_pred_te_adftd = np.array(df_te_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
+# bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_test")
+# report_mean_ci(dfname="ftd_v_ad_test")
+# test_scores(Y_true_te_adftd, Y_pred_te_adftd)
+# write_report('test', Y_true_te_adftd, Y_pred_te_adftd)
+
+
+# # exit sys
+logger.info("++ aidp_metrics.py completed")
 sys.exit()
