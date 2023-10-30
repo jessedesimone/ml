@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/local/bin/python3.9
 
 '''
 Module for plotting ROC curves on train and test predictions output from AIDP SVM
@@ -127,16 +127,16 @@ def plotroc(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
     return fig
 
 
-
-
-
-
-
-
 #================== plot ROC curves ==================
 logger.info("Plotting ROC curves")
 #AD vs DLB
 logger.info("AD vs DLB")
 dxmodel = model_list[0]       #load classification model
 '''select only rows with AD and DLB cases; then rename based on data_dict'''
-df_tr_Y_addlb = df_tr_Y.loc[(df_tr_Y.GroupID == 1) & (df_tr_Y.GroupID == 2)]
+df_tr_Y_addlb = df_tr_Y.loc[(df_tr_Y.GroupID == 1) | (df_tr_Y.GroupID == 2)]
+df_te_Y_addlb = df_te_Y.loc[(df_te_Y.GroupID == 1) | (df_te_Y.GroupID == 2)]
+df_tr_X_addlb = df_tr_X[df_tr_X.index.isin(df_tr_Y_addlb.index)]    #get rows only in Y data
+df_te_X_addlb = df_te_X[df_te_X.index.isin(df_te_Y_addlb.index)]    #get rows only in Y data
+
+ypredtr = dxmodel.predict_proba(df_tr_X_addlb)[::,1]
+ypredte = dxmodel.predict_proba(df_te_X_addlb)[::,1]

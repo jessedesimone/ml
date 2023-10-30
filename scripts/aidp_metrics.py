@@ -192,6 +192,27 @@ def write_report(metric_type: str, Y_true, Y_pred):
     logger.info(npv_score)
     logger.info(acc_score)
 
+# plot roc curve 
+def plotroc(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
+    '''trfp/tefp = training false positive rate / testing
+    trtp/tetp = training true positive rate / testing
+    trauc/teauc = training auc / testing
+    title = figure title
+    outname = output file name (no extension)'''
+    print('plotting ROC curve')
+    fig=plt.figure()
+    plt.plot(trfp, trtp, label="Training AUC=%0.3f" %trauc)
+    plt.plot(tefp, tetp, label="Testing AUC=%0.3f" %teauc)
+    plt.plot([0,1], [0,1], 'k--')
+    plt.title(title, color='k', rotation='vertical', x=-.15, y=.345)
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.legend(loc=4, frameon=False)
+    plt.savefig(outname +'.jpg', dpi=300)
+    plt.show()
+    return fig
+
+
 #================== calculate metrics ==================
 logger.info("calulating metrics")
 #AD vs DLB
