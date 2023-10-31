@@ -1,8 +1,5 @@
 .DS_Store
 aidp/*
 scripts/*.ipynb
-scripts/bootstrappingCI.ipynb
-scripts/Predictor.ipynb
-scripts/ROC_histo.ipynb
 logs/*
 mlreports/*
