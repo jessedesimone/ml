@@ -2,6 +2,7 @@
 
 '''
 Module for bootstrapping metrics on train and test predictions output from AIDP SVM
+Will also create ROC plots for train and test sets
 
 '''
 #================== configuration ==================
