@@ -109,7 +109,7 @@ dict_list = [ad_v_con_dict, ad_v_dlb_dict, ad_v_ftd_dict, ad_v_dem_dict, ad_v_al
              ftd_v_con_dict, ftd_v_ad_dict, ftd_v_dlb_dict, ftd_v_dem_dict, ftd_v_all_dict]
 
 #define functions
-# matrix
+# confusion matrix
 def conmatscores(y_true, y_pred):
     y_pred_class = np.array(np.round(y_pred))
     cm = confusion_matrix(y_true, y_pred_class) #assume y_pred is fed in as probabilities
@@ -159,59 +159,40 @@ def report_mean_ci(dfname: str):
         mean_met = np.mean(metric_array)
         lower_met = metric_array[int(.025*len(metric_array))]
         upper_met = metric_array[int(0.975*len(metric_array))]
-        # print(metric, mean_met, lower_met, upper_met)
         df_sum.loc[str(metric)] = [mean_met, lower_met, upper_met]
     df_sum.to_excel(directories.outfile_dir + dfname + '_mean_ci_report.xlsx')
-    
-# metrics
-def test_scores(Y_true, Y_pred):
-    accuracy, sens, spec, ppv, npv, auc = conmatscores(Y_true, Y_pred)
-    print ("accuracy: ", round(accuracy*100,2))
-    print ("sensitivity: ", round(sens*100,2))
-    print ("specificity: ", round(spec*100,2))
-    print ("positive predictive value: ", round(ppv*100,2))
-    print ("negative predictive value: ", round(npv*100,2))
-    print ("Area-under-the-curve:", round(auc,3))
+    logger.info("--TRAINING METRICS: Bootstrapped CIs--")
+    logger.info(df_sum)
 
-# metric report writer
-def write_report(metric_type: str, Y_true, Y_pred):
-    if metric_type == 'train':
-        logger.info("--TRAINING METRICS--")
-    elif metric_type == 'test':
-        logger.info("--TESTING METRICS--")
-    accuracy, sens, spec, ppv, npv, auc = conmatscores(Y_true, Y_pred)
-    auc_score = ("AUC: " + str(round(auc,3)))
-    sens_score = ("sensitivity: " + str(round(sens*100,2)))
-    spec_score = ("specificity: " + str(round(spec*100,2)))
-    ppv_score = ("positive predictive value: " + str(round(ppv*100,2)))
-    npv_score = ("negative predictive value: " + str(round(npv*100,2)))
-    acc_score = ("accuracy: " + str(round(accuracy*100,2)))
-    logger.info(auc_score)
+def test_scores(Y_true, Y_pred, outname:str):
+    accte, senste, specte, ppvte, npvte, aucte = conmatscores(Y_true, Y_pred)
+    data=[accte, senste, specte, ppvte, npvte, aucte]
+    test_report_df = pd.DataFrame(data, 
+                                  index=["Accuracy", "Sensitivity","Specificity", "PPV", "NPV", "AUC"],
+                                  columns={outname} )
+    # print ("AUC:", round(aucte,3)) 
+    # print ("accuracy: ", round(accte*100,2))
+    # print ("sensitivity: ", round(senste*100,2))
+    # print ("specificity: ", round(specte*100,2))
+    # print ("positive predictive value: ", round(ppvte*100,2))
+    # print ("negative predictive value: ", round(npvte*100,2))
+    test_report_df.to_excel(directories.outfile_dir + outname + '_test_report.xlsx')
+    '''below for logger'''
+    logger.info("--TESTING METRICS--")
+    acc_score = ("accuracy: " + str(round(accte*100,2)))
+    sens_score = ("sensitivity: " + str(round(senste*100,2)))
+    spec_score = ("specificity: " + str(round(specte*100,2)))
+    ppv_score = ("positive predictive value: " + str(round(ppvte*100,2)))
+    npv_score = ("negative predictive value: " + str(round(npvte*100,2)))
+    auc_score = ("AUC: " + str(round(aucte,3)))
+    logger.info(acc_score)
     logger.info(sens_score)
     logger.info(spec_score)
     logger.info(ppv_score)
     logger.info(npv_score)
-    logger.info(acc_score)
+    logger.info(auc_score)
 
-# plot roc curve 
-def plotroc1(trfp, trtp, trauc, tefp, tetp, teauc, title: str, outname: str):
-    '''trfp/tefp = training false positive rate / testing
-    trtp/tetp = training true positive rate / testing
-    trauc/teauc = training auc / testing
-    title = figure title
-    outname = output file name (no extension)'''
-    print('plotting ROC curve')
-
-    plt.plot(trfp, trtp, label="Training AUC=%0.3f" %trauc)
-    plt.plot(tefp, tetp, label="Testing AUC=%0.3f" %teauc)
-    plt.plot([0,1], [0,1], 'k--')
-    plt.title(title, color='k', rotation='vertical', x=-.15, y=.345)
-    plt.ylabel('True Positive Rate (TPR)')
-    plt.xlabel('False Positive Rate (FPR)')
-    plt.legend(loc=4, frameon=False)
-    plt.savefig(outname +'.jpg', dpi=300)
-    plt.show()
-
+# plot roc curve for train or test
 def plotroc_single(Y_true, Y_pred, title: str, outname: str, type: str):
     fpr, tpr, thresh = roc_curve(Y_true, Y_pred)
     auc = round(roc_auc_score(Y_true, Y_pred), 3)
@@ -229,11 +210,12 @@ def plotroc_single(Y_true, Y_pred, title: str, outname: str, type: str):
     plt.savefig(directories.outfile_dir + outname + '_' + type + '.jpg', dpi=300)
     plt.show()
 
+# plot roc curve for both train and test same plot
 def plotroc_both(Y_true_tr, Y_pred_tr, Y_true_te, Y_pred_te, title: str, outname: str):
-    fprtr, tprtr, _ = roc_curve(Y_true_tr, Y_pred_tr)
+    fprtr, tprtr, thresh = roc_curve(Y_true_tr, Y_pred_tr)
     auctr = round(roc_auc_score(Y_true_tr, Y_pred_tr), 3)
     plt.plot(fprtr, tprtr, color='blue', lw=2, alpha=0.3, label="train AUC=%0.3f" %auctr)
-    fprte, tprte, _ = roc_curve(Y_true_te, Y_pred_te)
+    fprte, tprte, thresh = roc_curve(Y_true_te, Y_pred_te)
     aucte = round(roc_auc_score(Y_true_te, Y_pred_te), 3)
     plt.plot(fprte, tprte, color = 'orange', lw=2, alpha=0.3, label="test AUC=%0.3f" %aucte)
     plt.plot([0,1], [0,1], 'k--')
@@ -245,38 +227,32 @@ def plotroc_both(Y_true_tr, Y_pred_tr, Y_true_te, Y_pred_te, title: str, outname
     plt.savefig(directories.outfile_dir + outname + '.jpg', dpi=300)
     plt.show()
 
-
 #================== calculate metrics ==================
 logger.info("calulating metrics")
 #================== AD vs DLB ==================
-# logger.info("AD vs DLB")
-# #train
-# logger.info("Training & Validation")
-# df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim['GroupID'] == 1) | (df_tr_trim['GroupID'] == 2)]
-# df_tr_trim_addlb_redef = df_tr_trim_addlb.replace(dict_list[1])
-# Y_true_tr_addlb = np.array(df_tr_trim_addlb_redef.GroupID)
-# Y_pred_tr_addlb = np.array(df_tr_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
-# logger.info("Generating Reports")
-# # bootstrapper(Y_true_tr_addlb, Y_pred_tr_addlb, savename="ad_v_dlb_train")
-# # report_mean_ci(dfname="ad_v_dlb_train")
-# # test_scores(Y_true_tr_addlb, Y_pred_tr_addlb)
-# # write_report('train', Y_true_tr_addlb, Y_pred_tr_addlb)
+logger.info("AD vs DLB")
+#train
+logger.info("Training & Validation")
+df_tr_trim_addlb = df_tr_trim.loc[(df_tr_trim['GroupID'] == 1) | (df_tr_trim['GroupID'] == 2)]
+df_tr_trim_addlb_redef = df_tr_trim_addlb.replace(dict_list[1])
+Y_true_tr_addlb = np.array(df_tr_trim_addlb_redef.GroupID)
+Y_pred_tr_addlb = np.array(df_tr_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
+logger.info("Generating Reports")
+bootstrapper(Y_true_tr_addlb, Y_pred_tr_addlb, savename="ad_v_dlb_train")
+report_mean_ci(dfname="ad_v_dlb_train")
 
-# #test
-# logger.info("Testing")
-# df_te_trim_addlb = df_te_trim.loc[(df_te_trim['GroupID'] == 1) | (df_te_trim['GroupID'] == 2)]
-# df_te_trim_addlb_redef = df_te_trim_addlb.replace(dict_list[1])
-# Y_true_te_addlb = np.array(df_te_trim_addlb_redef.GroupID)
-# Y_pred_te_addlb = np.array(df_te_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
-# logger.info("Generating Reports")
-# # bootstrapper(Y_true_te_addlb, Y_pred_te_addlb, savename="ad_v_dlb_test")
-# # report_mean_ci(dfname="ad_v_dlb_test")
-# # test_scores(Y_true_te_addlb, Y_pred_te_addlb)
-# # write_report('test', Y_true_te_addlb, Y_pred_te_addlb)
+#test
+logger.info("Testing")
+df_te_trim_addlb = df_te_trim.loc[(df_te_trim['GroupID'] == 1) | (df_te_trim['GroupID'] == 2)]
+df_te_trim_addlb_redef = df_te_trim_addlb.replace(dict_list[1])
+Y_true_te_addlb = np.array(df_te_trim_addlb_redef.GroupID)
+Y_pred_te_addlb = np.array(df_te_trim_addlb_redef["dmri_ad_v_dlb (AD Probability)"])
+logger.info("Generating Reports")
+test_scores(Y_true_te_addlb, Y_pred_te_addlb, 'ad_v_dlb')
 
-# logger.info("Plotting ROC curves")
+logger.info("Plotting ROC curves")
 # plotroc_single(Y_true_tr_addlb, Y_pred_tr_addlb, 'AD_vs_DLB', 'roc_ad_v_dlb', 'train')
-# plotroc_single(Y_true_te_addlb, Y_pred_te_addlb, 'AD_vs_DLB Test', 'roc_ad_v_dlb_test', 'test')
+plotroc_single(Y_true_te_addlb, Y_pred_te_addlb, 'AD_vs_DLB Test', 'roc_ad_v_dlb_test', 'test')
 # plotroc_both(Y_true_tr_addlb, Y_pred_tr_addlb, Y_true_te_addlb, Y_pred_te_addlb, 'AD_vs_DLB', 'roc_ad_v_dlb')
 
 # #================== AD vs FTD ==================
@@ -287,28 +263,23 @@ df_tr_trim_adftd = df_tr_trim.loc[(df_tr_trim.GroupID == 1 ) | (df_tr_trim.Group
 df_tr_trim_adftd_redef = df_tr_trim_adftd.replace(dict_list[11])
 Y_true_tr_adftd = np.array(df_tr_trim_adftd_redef.GroupID)
 Y_pred_tr_adftd = np.array(df_tr_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
-# logger.info("Generating Reports")
-# bootstrapper(Y_true_tr_adftd, Y_pred_tr_adftd, savename="ftd_v_ad_train")
-# report_mean_ci(dfname="ftd_v_ad_train")
-test_scores(Y_true_tr_adftd, Y_pred_tr_adftd)
-# write_report('train', Y_true_tr_adftd, Y_pred_tr_adftd)
+logger.info("Generating Reports")
+bootstrapper(Y_true_tr_adftd, Y_pred_tr_adftd, savename="ftd_v_ad_train")
+report_mean_ci(dfname="ftd_v_ad_train")
 
-#test
+# test
 logger.info("Testing")
 df_te_trim_adftd = df_te_trim.loc[(df_te_trim.GroupID == 1) | (df_te_trim.GroupID == 4)]
 df_te_trim_adftd_redef = df_te_trim_adftd.replace(dict_list[11])
 Y_true_te_adftd = np.array(df_te_trim_adftd_redef.GroupID)
 Y_pred_te_adftd = np.array(df_te_trim_adftd_redef["dmri_ftd_v_ad (FTD Probability)"])
-# logger.info("Generating Reports")
-# bootstrapper(Y_true_te_adftd, Y_pred_te_adftd, savename="ftd_v_ad_test")
-# report_mean_ci(dfname="ftd_v_ad_test")
-test_scores(Y_true_te_adftd, Y_pred_te_adftd)
-# write_report('test', Y_true_te_adftd, Y_pred_te_adftd)
+logger.info("Generating Reports")
+test_scores(Y_true_te_adftd, Y_pred_te_adftd, 'ad_v_ftd')
 
 logger.info("Plotting ROC curves")
-#plotroc_single(Y_true_tr_adftd, Y_pred_tr_adftd, 'AD_vs_FTD', 'roc_ad_v_ftd', 'train')
-#plotroc_single(Y_true_te_adftd, Y_pred_te_adftd, 'AD_vs_ftd Test', 'roc_ad_v_ftd_test', 'test')
-plotroc_both(Y_true_tr_adftd, Y_pred_tr_adftd, Y_true_te_adftd, Y_pred_te_adftd, 'AD_vs_DLB', 'roc_ad_v_dlb')
+# plotroc_single(Y_true_tr_adftd, Y_pred_tr_adftd, 'AD_vs_FTD', 'roc_ad_v_ftd', 'train')
+plotroc_single(Y_true_te_adftd, Y_pred_te_adftd, 'AD_vs_ftd Test', 'roc_ad_v_ftd_test', 'test')
+# plotroc_both(Y_true_tr_adftd, Y_pred_tr_adftd, Y_true_te_adftd, Y_pred_te_adftd, 'FTD_vs_AD', 'roc_ftd_v_ad')
 
 #exit sys
 logger.info("++ aidp_metrics.py completed")
