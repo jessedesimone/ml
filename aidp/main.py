@@ -23,7 +23,7 @@ def main():
 
     # Read in csv input file
     model_data = ModelData(args.input_file, ExcelDataReader()).read_data()
-    logger.debug(model_data.data.describe())
+    logger.info(model_data.data.describe())
 
     # Get prediction/training engine
     engine = getEngine(args.cmd, model_data)
