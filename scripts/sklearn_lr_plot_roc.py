@@ -41,6 +41,7 @@ rcParams['axes.spines.top'] = False
 rcParams['axes.spines.right'] = False
 plt.figure(figsize = (10,6))
 plt.plot(fpr, tpr, color='red', label=f'AUC (Logistic Regression) = {auc_lr:.3f}')
+#plt.plot(fpr2, tpr2, color='red', label=f'AUC (Logistic Regression) = {auc_lr2:.3f}')    #add second line; need to define new terms a priori
 plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', label="Baseline")
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
