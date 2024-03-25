@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_classification
 from  sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
 from matplotlib import rcParams
 
 #read data and define variables
