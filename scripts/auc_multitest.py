@@ -14,18 +14,29 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 from scipy.stats import norm
 from statsmodels.stats.multitest import multipletests
-from mlxtend.evaluate import delong_roc_variance
+#from mlxtend.evaluate import delong_roc_variance
+
+# Function to compute the variance of the AUC using bootstrapping
+def bootstrap_auc_variance(y_true, y_scores, n_iterations=1000):
+    aucs = np.zeros(n_iterations)
+    n = len(y_true)
+    for i in range(n_iterations):
+        indices = np.random.choice(n, n, replace=True)
+        y_true_boot = y_true[indices]
+        y_scores_boot = y_scores[indices]
+        aucs[i] = roc_auc_score(y_true_boot, y_scores_boot)
+    return np.var(aucs)
 
 # Function to perform DeLong's Test
 def delong_roc_test(y_true, y_scores):
     auc = roc_auc_score(y_true, y_scores)
-    auc_var = delong_roc_variance(y_true, y_scores)
+    auc_var = bootstrap_auc_variance(y_true, y_scores)
     z = (auc - 0.5) / np.sqrt(auc_var)
     p_value = 2 * norm.cdf(-abs(z))
     return auc, p_value
 
 # File path to the Excel file
-file_path = 'your_file.xlsx'  # Replace with your file path
+file_path = '/Users/jessedesimone/Desktop/Book3.xlsx'  # Replace with your file path
 
 # Read all sheets from the Excel file
 xls = pd.ExcelFile(file_path)
@@ -66,9 +77,9 @@ for sheet_name in sheet_names:
 p_values_corrected_delong = multipletests(p_values_delong, method='fdr_bh')[1]
 p_values_corrected_permutation = multipletests(p_values_permutation, method='fdr_bh')[1]
 
-# Print results
-print("Original p-values (DeLong's Test):", p_values_delong)
-print("FDR-corrected p-values (DeLong's Test):", p_values_corrected_delong)
+# Print results with 5 decimal places
+print("Original p-values (DeLong's Test):", [f"{p:.5f}" for p in p_values_delong])
+print("FDR-corrected p-values (DeLong's Test):", [f"{p:.5f}" for p in p_values_corrected_delong])
 
-print("Original p-values (Permutation Test):", p_values_permutation)
-print("FDR-corrected p-values (Permutation Test):", p_values_corrected_permutation)
+print("Original p-values (Permutation Test):", [f"{p:.5f}" for p in p_values_permutation])
+print("FDR-corrected p-values (Permutation Test):", [f"{p:.5f}" for p in p_values_corrected_permutation])
