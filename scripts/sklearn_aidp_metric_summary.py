@@ -2,6 +2,8 @@
 
 '''
 compute sklearn metrics when probabilities and targets are known
+compute probabilities for a specified set of endpoints (subsetted as separate dataframes)
+output results as individual sheets in excel
 '''
 # Import packages
 import os
